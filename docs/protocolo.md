@@ -34,7 +34,7 @@ forma correcta de usarlo: los bytes que no se entienden hay que conservarlos.
 | 0 | ID `0x0A` | |
 | 1 | Efecto | ver tabla de efectos. Probado: `1`, `2`, `12` |
 | 2 | Grupo de color | Escribir `2` a `5` no cambió nada visible en modo fijo |
-| 3 | Velocidad | El programa oficial la guarda invertida (nivel `1..5` → byte `5..1`). **Sin probar** |
+| 3 | Velocidad | El programa oficial la guarda invertida (nivel `1..5` se guarda como `5..1`). **Sin probar** |
 | 4 | Brillo | `1` a `5`. Probado: `1`, `3`, `5` |
 | 5–8 | Sin uso aparente | llegaron en `00` |
 | 9 | Desconocido | llegó `0x93`. **Se conserva tal cual** |
