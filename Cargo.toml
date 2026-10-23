@@ -1,0 +1,17 @@
+[package]
+name = "sindri-led"
+version = "0.1.0"
+edition = "2021"
+description = "Control de luces LED para el teclado K671 Sindri en Linux, sin software de Windows. No oficial."
+license = "MIT"
+readme = "README.md"
+keywords = ["linux", "hid", "keyboard", "led", "k671"]
+categories = ["command-line-utilities", "hardware-support"]
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+libc = "0.2"
+
+[profile.release]
+lto = true
+strip = true
