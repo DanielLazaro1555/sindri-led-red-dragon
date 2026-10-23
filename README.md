@@ -25,7 +25,9 @@ $ sindri-led brillo 5          # brillo de 1 a 5
 $ sindri-led efecto respira    # cambia de efecto
 $ sindri-led azul              # enciende solo las teclas azules
 $ sindri-led todas             # enciende todas las teclas
-$ sindri-led teclas 66,72,73   # enciende solo esas posiciones
+$ sindri-led teclas esc,f1,w,a,s,d   # enciende solo esas teclas
+$ sindri-led teclas ninguna    # apaga todas las teclas
+$ sindri-led mapa              # lista los nombres de tecla y su posición
 $ sindri-led guardar           # guarda el perfil actual
 $ sindri-led cargar            # vuelve a ese perfil
 $ sindri-led restablecer       # fijo, grupo 1, velocidad 3, brillo 3
@@ -92,7 +94,7 @@ Probado **solo** en un teclado K671 Sindri (USB `258a:013b`, distribución latin
 | Encender o apagar teclas (reporte `0x0B`) | probado |
 | El perfil se conserva al desconectar el teclado | probado |
 | Velocidad, otros efectos (`3` a `11`), `apagado` | **sin probar** |
-| Mapa de nombres de tecla a posiciones | **pendiente** (por ahora se usan números) |
+| Nombres de tecla (105 teclas, `sindri-led mapa`) | probado en un teclado ISO latino |
 | Otros teclados con el mismo ID u otro firmware | **desconocido** |
 
 ## Precauciones
@@ -117,6 +119,7 @@ Probado **solo** en un teclado K671 Sindri (USB `258a:013b`, distribución latin
 ## Documentación
 
 - [`docs/protocolo.md`](docs/protocolo.md): el protocolo HID, byte a byte, y lo que no se sabe.
+- [`docs/mapa-de-teclas.md`](docs/mapa-de-teclas.md): qué posición corresponde a cada tecla y cómo se midió.
 - [`docs/como-se-hizo.md`](docs/como-se-hizo.md): cómo se descubrió, con los intentos que fallaron.
 - [`prototipo-python/`](prototipo-python): el prototipo original en Python, sin dependencias.
 
@@ -133,7 +136,7 @@ La lógica del protocolo (`src/protocol.rs`) está separada del acceso al hardwa
 
 - Probar en tu teclado y contar el resultado (indica `lsusb` y el firmware).
 - Probar la velocidad y los efectos `3` a `11`.
-- Hacer el mapa de posiciones a teclas físicas.
+- Comprobar el mapa de teclas en otras distribuciones (ANSI, ISO de otros países).
 - Averiguar para qué sirven los bytes sin documentar de `docs/protocolo.md`.
 
 ## Licencia

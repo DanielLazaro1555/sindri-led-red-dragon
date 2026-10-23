@@ -2,6 +2,7 @@
 
 mod device;
 mod protocol;
+mod teclas;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -12,7 +13,7 @@ use clap::{Parser, Subcommand};
 
 use device::Keyboard;
 use protocol::{
-    keys_report, parse_positions, Effect, LedReport, DEFAULT_BRIGHTNESS, DEFAULT_EFFECT, DEFAULT_GROUP,
+    keys_report, Effect, LedReport, DEFAULT_BRIGHTNESS, DEFAULT_EFFECT, DEFAULT_GROUP,
     DEFAULT_SPEED, POSITIONS_ALL, POSITIONS_BLUE,
 };
 
@@ -50,8 +51,10 @@ enum Orden {
         nivel: u8,
     },
     /// Enciende solo las teclas indicadas (efecto personalizado): `todas`, `ninguna`, `azul` o una
-    /// lista de posiciones como `66,72,73`.
+    /// lista de nombres como `esc,f1,a` (ver `mapa`). Una posición suelta se escribe `p66`.
     Teclas { seleccion: String },
+    /// Muestra los nombres de tecla y su posición en el reporte.
+    Mapa,
     /// Atajo: enciende solo la franja azul del teclado.
     Azul,
     /// Atajo: enciende todas las teclas.
@@ -65,6 +68,11 @@ enum Orden {
 }
 
 fn main() -> ExitCode {
+    // Rust ignora SIGPIPE por defecto y `println!` entraría en pánico con `sindri-led mapa | head`.
+    // SAFETY: restaurar la acción por defecto de SIGPIPE al inicio, antes de crear hilos, es seguro.
+    unsafe {
+        libc::signal(libc::SIGPIPE, libc::SIG_DFL);
+    }
     let cli = Cli::parse();
     match ejecutar(cli) {
         Ok(()) => ExitCode::SUCCESS,
@@ -76,6 +84,10 @@ fn main() -> ExitCode {
 }
 
 fn ejecutar(cli: Cli) -> Result<(), String> {
+    if let Orden::Mapa = cli.orden {
+        mapa();
+        return Ok(());
+    }
     let kb = Keyboard::open(cli.dispositivo.as_deref())?;
     match cli.orden {
         Orden::Estado => {
@@ -89,6 +101,7 @@ fn ejecutar(cli: Cli) -> Result<(), String> {
         Orden::Brillo { nivel } => cambiar(&kb, |r| r.set_brightness(nivel))?,
         Orden::Velocidad { nivel } => cambiar(&kb, |r| r.set_speed(nivel))?,
         Orden::Teclas { seleccion } => teclas(&kb, &seleccion)?,
+        Orden::Mapa => unreachable!("se atiende antes de abrir el teclado"),
         Orden::Azul => teclas(&kb, "azul")?,
         Orden::Todas => teclas(&kb, "todas")?,
         Orden::Guardar { archivo } => {
@@ -146,7 +159,9 @@ fn teclas(kb: &Keyboard, seleccion: &str) -> Result<(), String> {
         "todas" | "all" => POSITIONS_ALL.collect(),
         "ninguna" | "none" => Vec::new(),
         "azul" | "blue" => POSITIONS_BLUE.to_vec(),
-        lista => parse_positions(lista)?,
+        "mapeadas" => teclas::posiciones_mapeadas(),
+        "huecos" => teclas::posiciones_sin_tecla(),
+        lista => teclas::parse_lista(lista)?,
     };
     let reporte = keys_report(&posiciones, DEFAULT_GROUP)?;
 
@@ -161,6 +176,14 @@ fn teclas(kb: &Keyboard, seleccion: &str) -> Result<(), String> {
     }
     println!("{} teclas encendidas (efecto personalizado)", posiciones.len());
     Ok(())
+}
+
+/// Imprime la tabla de teclas: nombre, fila, columna y posición en el reporte 0x0B.
+fn mapa() {
+    println!("{:<16} {:>4} {:>7} {:>8}", "tecla", "fila", "columna", "posición");
+    for t in &teclas::TECLAS {
+        println!("{:<16} {:>4} {:>7} {:>8}", t.nombre, t.fila, t.columna, t.posicion());
+    }
 }
 
 fn perfil_por_defecto() -> PathBuf {

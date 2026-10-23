@@ -8,7 +8,8 @@ GET = lambda n: IOC(n, 0x07)   # HIDIOCGFEATURE
 SET = lambda n: IOC(n, 0x06)   # HIDIOCSFEATURE
 
 # Posiciones del reporte 0x0B que corresponden a la franja azul del teclado
-# (F10 F11 F12 = Backspace ] \ Enter RShift RCtrl), sin la tecla "-" junto al Shift.
+# (menu, f11, ¿, }, shift der., ctrl der., f12, retroceso; 72 y 81 no tienen tecla).
+# Sin la posición 65, que es la tecla "-" junto al Shift derecho y sale celeste.
 LIT = [66, 72, 73, 74, 76, 77, 78, 79, 80, 81]
 
 fd = os.open("/dev/hidraw6", os.O_RDWR)

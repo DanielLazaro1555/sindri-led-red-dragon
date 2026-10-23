@@ -96,17 +96,23 @@ a derecha se vieron seis colores: amarillo, verde, celeste, azul, morado y rojo.
 - No existe un "azul en todo el teclado". Se puede **encender solo las teclas que ya son azules**.
 - Para un color, hay que elegir qué teclas se encienden.
 
-Las posiciones `66, 72, 73, 74, 76, 77, 78, 79, 80, 81` dieron **azul puro** (en el teclado de
-pruebas, distribución latina). Incluir la posición `65` encendía además una tecla celeste, la que
-queda a la izquierda del Shift derecho.
+Las posiciones `66, 72, 73, 74, 76, 77, 78, 79, 80, 81` dieron **azul puro**. Según el mapa de abajo,
+las teclas que se encienden son `menu`, `f11`, `interrogacion`, `llave-der`, `shift-der`, `ctrl-der`,
+`f12` y `retroceso` (las posiciones 72 y 81 no tienen tecla). Incluir además la posición `65`
+encendía la tecla `guion`, que sale celeste.
 
-### Mapa de posiciones (incompleto)
+### Mapa de posiciones
 
-El programa oficial numera 104 teclas del `1` al `124` en su archivo de configuración. En las pruebas,
-la posición que enciende cada tecla parecía estar **desplazada en uno** respecto a esa numeración: lo
-que `Cfg.ini` llama posición *n* se encendía al escribir en *n + 1*. Es una hipótesis a medias, así que
-el mapa físico completo **todavía no está documentado**; falta hacerlo probando tecla por tecla, y
-las contribuciones son bienvenidas.
+Las posiciones forman una matriz de 6 filas por 21 columnas:
+
+```
+posición = 6 × columna + fila + 1
+```
+
+La tabla completa de las 105 teclas, cómo se comprobó y qué es suposición está en
+[`mapa-de-teclas.md`](mapa-de-teclas.md). Una nota sobre el origen: la numeración del archivo de
+configuración del programa oficial va un número por debajo (`posición − 1`), y por eso al principio
+el mapa parecía desplazado en uno.
 
 ## Detalles de implementación
 
@@ -122,4 +128,4 @@ las contribuciones son bienvenidas.
 - Qué hace el grupo de color en los demás efectos.
 - Si la velocidad y los efectos 3 a 11 funcionan como indica el programa oficial.
 - Si otros teclados con el mismo `258a:013b` (o distinto firmware) usan el mismo protocolo.
-- El mapa completo de posiciones a teclas físicas.
+- Si el mapa de teclas es igual en teclados de otra distribución (el de aquí es ISO latino).

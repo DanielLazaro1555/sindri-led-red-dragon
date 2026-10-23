@@ -89,6 +89,27 @@ El prototipo está en [`prototipo-python/`](../prototipo-python): unas 25 línea
 sin dependencias. La herramienta final está en Rust (`src/`), con la lógica del protocolo separada
 del acceso al hardware para poder probarla con tests sin teclado.
 
+## 8. El mapa de teclas
+
+El reporte `0x0B` numera las teclas con un número, pero no dice cuál es cuál. Para medirlo:
+
+1. **Seis grupos.** Los datos del programa oficial sugerían que las posiciones avanzan de 6 en 6 en la
+   fila de funciones. Se encendió el grupo `1, 7, 13…` y salió la fila superior; con `2, 8, 14…` la de
+   los números, y así hasta las seis filas. Eso dio la fórmula `6 × columna + fila + 1`.
+2. **Predecir y comprobar.** Con las seis filas descritas se armó un mapa de prueba y se encendieron
+   solo algunas teclas de cada fila (una de cada tres), más posiciones que debían estar vacías. Si la
+   predicción fallaba, el mapa estaba mal.
+3. **Dónde falló.** En la fila del Shift. Se había supuesto que la tecla `<` de un teclado ISO ocupaba
+   la columna 1, pero en realidad la `Z` está ahí y el `<` está en la columna 13. Se resolvió encendiendo
+   tramos más pequeños (columnas 0 a 7, luego 8 a 15). La barra espaciadora ocupa una sola posición:
+   se encontró partiendo en dos las columnas 3 a 6.
+4. **Un error de numeración.** Antes se había usado la numeración del archivo de configuración del
+   programa oficial, que va un número por debajo. Eso hizo que la lista de teclas azules se describiera
+   mal por un tiempo; el mapa medido lo corrige.
+5. **Prueba final.** Al encender las 105 posiciones del mapa, todas las teclas se encienden.
+
+La tabla y las suposiciones están en [`mapa-de-teclas.md`](mapa-de-teclas.md).
+
 ## Herramientas
 
 - [REA](https://github.com/morluto/rea) y [Ghidra](https://ghidra-sre.org/): decompilar el programa

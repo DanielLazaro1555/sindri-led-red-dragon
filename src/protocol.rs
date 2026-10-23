@@ -21,7 +21,9 @@ pub const MAX_POSITION: u8 = 125;
 
 /// Todas las teclas (posiciones `1..=124`, las que usa el programa oficial).
 pub const POSITIONS_ALL: std::ops::RangeInclusive<u8> = 1..=124;
-/// Teclas de la franja azul del arcoíris, sin la tecla junto al Shift derecho.
+/// Teclas de la franja azul del arcoíris: menu, f11, interrogacion, llave-der, shift-der,
+/// ctrl-der, f12 y retroceso (72 y 81 no tienen tecla). Se deja fuera `guion` (posición 65),
+/// que sale celeste.
 pub const POSITIONS_BLUE: [u8; 10] = [66, 72, 73, 74, 76, 77, 78, 79, 80, 81];
 
 /// Valores por defecto que traía el teclado de fábrica (los leídos antes de cambiar nada).
