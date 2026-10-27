@@ -3,6 +3,7 @@
 mod device;
 mod protocol;
 mod teclas;
+mod web;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -65,6 +66,15 @@ enum Orden {
     Cargar { archivo: Option<PathBuf> },
     /// Vuelve a los valores de fábrica observados: efecto fijo, grupo 1, velocidad 3, brillo 3.
     Restablecer,
+    /// Abre el panel de control interactivo en el navegador web (por defecto http://127.0.0.1:8421).
+    Web {
+        /// Puerto local donde escuchar.
+        #[arg(long, default_value_t = 8421)]
+        puerto: u16,
+        /// No abrir el navegador automáticamente al iniciar.
+        #[arg(long)]
+        sin_abrir: bool,
+    },
 }
 
 fn main() -> ExitCode {
@@ -84,9 +94,15 @@ fn main() -> ExitCode {
 }
 
 fn ejecutar(cli: Cli) -> Result<(), String> {
-    if let Orden::Mapa = cli.orden {
-        mapa();
-        return Ok(());
+    match cli.orden {
+        Orden::Mapa => {
+            mapa();
+            return Ok(());
+        }
+        Orden::Web { puerto, sin_abrir } => {
+            return web::servir(cli.dispositivo.as_deref(), puerto, !sin_abrir);
+        }
+        _ => {}
     }
     let kb = Keyboard::open(cli.dispositivo.as_deref())?;
     match cli.orden {
@@ -101,7 +117,7 @@ fn ejecutar(cli: Cli) -> Result<(), String> {
         Orden::Brillo { nivel } => cambiar(&kb, |r| r.set_brightness(nivel))?,
         Orden::Velocidad { nivel } => cambiar(&kb, |r| r.set_speed(nivel))?,
         Orden::Teclas { seleccion } => teclas(&kb, &seleccion)?,
-        Orden::Mapa => unreachable!("se atiende antes de abrir el teclado"),
+        Orden::Mapa | Orden::Web { .. } => unreachable!("se atiende antes de abrir el teclado"),
         Orden::Azul => teclas(&kb, "azul")?,
         Orden::Todas => teclas(&kb, "todas")?,
         Orden::Guardar { archivo } => {
@@ -186,7 +202,7 @@ fn mapa() {
     }
 }
 
-fn perfil_por_defecto() -> PathBuf {
+pub(crate) fn perfil_por_defecto() -> PathBuf {
     let base = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
         .filter(|p| p.is_absolute())

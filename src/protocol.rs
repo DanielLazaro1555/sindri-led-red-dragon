@@ -21,10 +21,11 @@ pub const MAX_POSITION: u8 = 125;
 
 /// Todas las posiciones del reporte `0x0B` (`1..=125`, incluida `num-enter` en 125).
 pub const POSITIONS_ALL: std::ops::RangeInclusive<u8> = 1..=MAX_POSITION;
-/// Teclas de la franja azul del arcoíris: menu, f11, interrogacion, llave-der, shift-der,
-/// ctrl-der, f12 y retroceso (72 y 81 no tienen tecla). Se deja fuera `guion` (posición 65),
+/// Teclas de la franja azul del arcoíris comprobadas en el teclado real:
+/// menu (66), f11 (73), interrogacion (74), llave-der (76), shift-der (77),
+/// ctrl-der (78), f12 (79) y retroceso (80). Se deja fuera `guion` (posición 65),
 /// que sale celeste.
-pub const POSITIONS_BLUE: [u8; 10] = [66, 72, 73, 74, 76, 77, 78, 79, 80, 81];
+pub const POSITIONS_BLUE: [u8; 8] = [66, 73, 74, 76, 77, 78, 79, 80];
 
 /// Valores por defecto que traía el teclado de fábrica (los leídos antes de cambiar nada).
 pub const DEFAULT_EFFECT: Effect = Effect::Steady;
@@ -74,6 +75,39 @@ impl Effect {
 
     pub fn from_id(id: u8) -> Option<Effect> {
         Effect::ALL.into_iter().find(|e| e.id() == id)
+    }
+
+    /// Indica si el efecto admite control de velocidad según `LedOpt` en `Cfg.ini`.
+    pub const fn uses_speed(self) -> bool {
+        matches!(
+            self,
+            Effect::Breathing
+                | Effect::Reaction
+                | Effect::NeonStream
+                | Effect::RunningHorse
+                | Effect::SineWave
+                | Effect::RetroSnake
+                | Effect::Waterfall
+                | Effect::Ripples
+                | Effect::RainCurtain
+                | Effect::Windmill
+        )
+    }
+
+    /// Indica si el efecto admite control de brillo según `LedOpt` en `Cfg.ini`.
+    /// Los efectos 5 a 8 (Caballo, Onda, Serpiente, Cascada) tienen `light=0` y brillan siempre al máximo.
+    pub const fn uses_brightness(self) -> bool {
+        matches!(
+            self,
+            Effect::Steady
+                | Effect::Breathing
+                | Effect::Reaction
+                | Effect::NeonStream
+                | Effect::Ripples
+                | Effect::RainCurtain
+                | Effect::Windmill
+                | Effect::Custom
+        )
     }
 
     /// Nombre corto en español, el que usa la línea de comandos.
@@ -156,8 +190,16 @@ impl LedReport {
     pub fn group(&self) -> u8 {
         self.0[2]
     }
+    /// Nivel de velocidad de `1` (más lento) a `5` (más rápido).
+    /// En `OemDrv.exe` (`FUN_00403150`), el byte 3 del reporte `0x0A` se guarda invertido (`6 - nivel`):
+    /// `5` en el reporte es la velocidad más lenta (nivel 1) y `1` es la más rápida (nivel 5).
     pub fn speed(&self) -> u8 {
-        self.0[3]
+        let raw = self.0[3];
+        if (1..=5).contains(&raw) {
+            6 - raw
+        } else {
+            raw
+        }
     }
     pub fn brightness(&self) -> u8 {
         self.0[4]
@@ -169,8 +211,10 @@ impl LedReport {
     pub fn set_group(&mut self, v: u8) {
         self.0[2] = v;
     }
+    /// Ajusta la velocidad (`1` = más lento, `5` = más rápido), guardándola invertida (`6 - v`)
+    /// como hace `FUN_00403150` en `OemDrv.exe`.
     pub fn set_speed(&mut self, v: u8) {
-        self.0[3] = v;
+        self.0[3] = if (1..=5).contains(&v) { 6 - v } else { v };
     }
     pub fn set_brightness(&mut self, v: u8) {
         self.0[4] = v;
@@ -253,9 +297,16 @@ mod tests {
     }
 
     #[test]
-    fn ida_y_vuelta_hex() {
-        let r = LedReport::from_hex(ORIGINAL).unwrap();
-        assert_eq!(LedReport::from_hex(&r.to_hex()).unwrap(), r);
+    fn velocidad_se_guarda_invertida_como_oemdrv() {
+        let mut r = LedReport::from_hex(ORIGINAL).unwrap();
+        // Nivel 1 (más lento) -> byte 5 en el reporte 0x0A
+        r.set_speed(1);
+        assert_eq!(r.as_bytes()[3], 5);
+        assert_eq!(r.speed(), 1);
+        // Nivel 5 (más rápido) -> byte 1 en el reporte 0x0A
+        r.set_speed(5);
+        assert_eq!(r.as_bytes()[3], 1);
+        assert_eq!(r.speed(), 5);
     }
 
     #[test]

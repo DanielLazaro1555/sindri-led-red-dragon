@@ -31,6 +31,7 @@ $ sindri-led mapa              # lista los nombres de tecla y su posición
 $ sindri-led guardar           # guarda el perfil actual
 $ sindri-led cargar            # vuelve a ese perfil
 $ sindri-led restablecer       # fijo, grupo 1, velocidad 3, brillo 3
+$ sindri-led web               # abre el panel interactivo en el navegador (http://127.0.0.1:8421)
 ```
 
 Escribe `sindri-led --help` para ver todas las órdenes.
