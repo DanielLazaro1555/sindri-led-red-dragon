@@ -1,5 +1,5 @@
 //! Servidor HTTP local para controlar el teclado K671 Sindri desde el navegador web.
-//! No requiere dependencias externas: usa `std::net::TcpListener` e incrusta `web.html`.
+//! No requiere dependencias externas: usa `std::net::TcpListener` y sirve la carpeta `web/`.
 
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
@@ -16,7 +16,11 @@ use crate::protocol::{
 };
 use crate::teclas;
 
-const HTML_INDEX: &str = include_str!("web.html");
+const HTML_INDEX: &str = include_str!("../web/index.html");
+const CSS_ESTILOS: &str = include_str!("../web/css/estilos.css");
+const JS_DISPOSICION: &str = include_str!("../web/js/disposicion.js");
+const JS_ANIMACIONES: &str = include_str!("../web/js/animaciones.js");
+const JS_APP: &str = include_str!("../web/js/app.js");
 const COLORES_POR_DEFECTO: &str = include_str!("../colores.json");
 
 struct EstadoWeb {
@@ -78,7 +82,24 @@ fn atender_conexion(mut stream: TcpStream, estado: &mut EstadoWeb) -> std::io::R
 
     match (metodo, ruta) {
         ("GET", "/") | ("GET", "/index.html") => {
-            responder(&mut stream, 200, "text/html; charset=utf-8", HTML_INDEX)
+            let body = leer_recurso_web("web/index.html", HTML_INDEX);
+            responder(&mut stream, 200, "text/html; charset=utf-8", &body)
+        }
+        ("GET", "/css/estilos.css") => {
+            let body = leer_recurso_web("web/css/estilos.css", CSS_ESTILOS);
+            responder(&mut stream, 200, "text/css; charset=utf-8", &body)
+        }
+        ("GET", "/js/disposicion.js") => {
+            let body = leer_recurso_web("web/js/disposicion.js", JS_DISPOSICION);
+            responder(&mut stream, 200, "application/javascript; charset=utf-8", &body)
+        }
+        ("GET", "/js/animaciones.js") => {
+            let body = leer_recurso_web("web/js/animaciones.js", JS_ANIMACIONES);
+            responder(&mut stream, 200, "application/javascript; charset=utf-8", &body)
+        }
+        ("GET", "/js/app.js") => {
+            let body = leer_recurso_web("web/js/app.js", JS_APP);
+            responder(&mut stream, 200, "application/javascript; charset=utf-8", &body)
         }
         ("GET", "/api/estado") => {
             let (code, json) = api_estado(estado);
@@ -127,6 +148,10 @@ fn atender_conexion(mut stream: TcpStream, estado: &mut EstadoWeb) -> std::io::R
             r#"{"error":"ruta no encontrada"}"#,
         ),
     }
+}
+
+fn leer_recurso_web(ruta_relativa: &str, incrustado: &str) -> String {
+    std::fs::read_to_string(ruta_relativa).unwrap_or_else(|_| incrustado.to_string())
 }
 
 fn responder(stream: &mut TcpStream, code: u16, content_type: &str, body: &str) -> std::io::Result<()> {

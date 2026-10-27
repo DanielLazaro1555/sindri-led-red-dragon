@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sindri-led · Control Redragon K671 Sindri</title>
+  <link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-badge">K</div>
+    <div>
+      <h1>Redragon K671 Sindri · Panel LED</h1>
+      <p id="subHeaderMsg">Modo Control: haz clic o arrastra sobre las teclas para encenderlas o apagarlas</p>
+    </div>
+  </div>
+  <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <div class="status-pill">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText">Conectando...</span>
+    </div>
+    <div class="status-pill">
+      <strong id="litCount">105</strong>&nbsp;/ 105 teclas encendidas
+    </div>
+  </div>
+</header>
+
+<!-- Selector de modo: Encender/Apagar vs Editar Colores Registrados -->
+<div class="mode-bar">
+  <div class="mode-bar-top">
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tabControl" onclick="cambiarModoInteraccion('control')">
+        Modo Control (Encender / Apagar teclas)
+      </button>
+      <button class="mode-tab" id="tabEditarColor" onclick="cambiarModoInteraccion('color')">
+        Editar Colores Registrados del Teclado
+      </button>
+    </div>
+    <div style="font-size:0.8rem; color:var(--muted);" id="modeHint">
+      Los colores registrados se guardan automáticamente en <code>colores.json</code>
+    </div>
+  </div>
+
+  <!-- Barra de pintura de colores cuando está activo "Editar Colores Registrados" -->
+  <div class="paint-toolbar" id="paintToolbar">
+    <div class="brush-list">
+      <span style="font-size:0.82rem; color:var(--muted); margin-right:4px;">Elige un color y pinta las teclas:</span>
+
+      <div class="brush-item active" data-zone="yellow" onclick="seleccionarPincel('yellow')">
+        <input type="color" id="picker-yellow" value="#ffdd33" onclick="event.stopPropagation()" oninput="cambiarTonoPaleta('yellow', this.value)" title="Ajustar tono amarillo">
+        <span>Amarillo</span>
+      </div>
+
+      <div class="brush-item" data-zone="green" onclick="seleccionarPincel('green')">
+        <input type="color" id="picker-green" value="#22ee66" onclick="event.stopPropagation()" oninput="cambiarTonoPaleta('green', this.value)" title="Ajustar tono verde">
+        <span>Verde</span>
+      </div>
+
+      <div class="brush-item" data-zone="cyan" onclick="seleccionarPincel('cyan')">
+        <input type="color" id="picker-cyan" value="#22ddff" onclick="event.stopPropagation()" oninput="cambiarTonoPaleta('cyan', this.value)" title="Ajustar tono celeste">
+        <span>Celeste</span>
+      </div>
+
+      <div class="brush-item" data-zone="blue" onclick="seleccionarPincel('blue')">
+        <input type="color" id="picker-blue" value="#3377ff" onclick="event.stopPropagation()" oninput="cambiarTonoPaleta('blue', this.value)" title="Ajustar tono azul">
+        <span>Azul</span>
+      </div>
+
+      <div class="brush-item" data-zone="purple" onclick="seleccionarPincel('purple')">
+        <input type="color" id="picker-purple" value="#bb44ff" onclick="event.stopPropagation()" oninput="cambiarTonoPaleta('purple', this.value)" title="Ajustar tono morado">
+        <span>Morado</span>
+      </div>
+
+      <div class="brush-item" data-zone="red" onclick="seleccionarPincel('red')">
+        <input type="color" id="picker-red" value="#ff3344" onclick="event.stopPropagation()" oninput="cambiarTonoPaleta('red', this.value)" title="Ajustar tono rojo">
+        <span>Rojo</span>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+      <label class="check-label" title="Al pintar una tecla, la enciende sola en el teclado físico para que veas de qué color es su LED real">
+        <input type="checkbox" id="chkProbarEnTeclado">
+        Encender tecla en el teclado físico al pintarla
+      </label>
+      <button class="btn danger" onclick="restaurarColoresPorDefecto()">Restaurar colores por defecto</button>
+    </div>
+  </div>
+</div>
+
+<div class="keyboard-wrapper">
+  <div class="keyboard-case" id="keyboardCase">
+    <!-- Bloque 1: Principal -->
+    <div class="kb-block" id="mainBlock"></div>
+
+    <!-- Bloque 2: Navegación y Flechas -->
+    <div class="kb-block" id="navBlock"></div>
+
+    <!-- Bloque 3: Teclado Numérico -->
+    <div class="numpad-grid" id="numBlock">
+      <div class="numpad-leds">
+        <span>NUM</span>
+        <span>CAP</span>
+        <span>SCR</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controls-grid">
+  <!-- Selección rápida de teclas y franjas de color -->
+  <div class="card">
+    <h2>
+      Encender por grupo o color registrado
+      <span class="hint">Activa modo Personalizado (12)</span>
+    </h2>
+    <div class="btn-grid">
+      <button class="btn" onclick="seleccionarPreset('todas')">Encender todas (105)</button>
+      <button class="btn danger" onclick="seleccionarPreset('ninguna')">Apagar todas</button>
+      <button class="btn" onclick="seleccionarPreset('wasd')">Gamer (WASD + Flechas)</button>
+      <button class="btn" onclick="seleccionarPreset('invertir')">Invertir encendidas</button>
+    </div>
+    <div style="font-size:0.8rem; color:var(--muted); margin-top:2px;">
+      Clic normal = encender <strong>solo</strong> ese color · Shift+Clic = sumar/quitar ese color:
+    </div>
+    <div class="btn-grid">
+      <button class="btn" onclick="filtrarPorColor('yellow', event)"><span class="zone-dot" style="background:var(--c-yellow)"></span>Amarillo</button>
+      <button class="btn" onclick="filtrarPorColor('green', event)"><span class="zone-dot" style="background:var(--c-green)"></span>Verde</button>
+      <button class="btn" onclick="filtrarPorColor('cyan', event)"><span class="zone-dot" style="background:var(--c-cyan)"></span>Celeste</button>
+      <button class="btn" onclick="filtrarPorColor('blue', event)"><span class="zone-dot" style="background:var(--c-blue)"></span>Azul</button>
+      <button class="btn" onclick="filtrarPorColor('purple', event)"><span class="zone-dot" style="background:var(--c-purple)"></span>Morado</button>
+      <button class="btn" onclick="filtrarPorColor('red', event)"><span class="zone-dot" style="background:var(--c-red)"></span>Rojo</button>
+    </div>
+  </div>
+
+  <!-- Efectos de iluminación -->
+  <div class="card">
+    <h2>
+      Efecto de luz (Reporte 0x0A)
+      <span class="hint" id="currentEffectHint">Actual: —</span>
+    </h2>
+    <div class="btn-grid" id="effectsContainer"></div>
+    <div class="slider-row" style="margin-top:4px; padding-top:8px; border-top:1px solid #222b3b;">
+      <label title="Ajusta la velocidad de la animación en pantalla para igualarla con el oscilador interno del teclado">Ajuste ritmo web: <strong id="animScaleLabel">1.0x</strong></label>
+      <input type="range" id="animScaleRange" min="0.4" max="2.5" step="0.05" value="1.0" style="flex:1; cursor:pointer;" oninput="ajustarEscalaAnimacion(this.value)">
+      <button class="btn" onclick="reiniciarFaseEfecto()" title="Reinicia la animación en pantalla y en el teclado al mismo tiempo">Sincronizar</button>
+    </div>
+  </div>
+
+  <!-- Brillo, Velocidad y Perfiles -->
+  <div class="card">
+    <h2>
+      Brillo, Velocidad y Memoria
+      <span class="hint">Se guarda en el teclado</span>
+    </h2>
+    <div class="slider-row">
+      <label>Brillo</label>
+      <div class="level-buttons" id="brightnessBtns">
+        <button class="btn" onclick="cambiarBrillo(1)">1</button>
+        <button class="btn" onclick="cambiarBrillo(2)">2</button>
+        <button class="btn" onclick="cambiarBrillo(3)">3</button>
+        <button class="btn" onclick="cambiarBrillo(4)">4</button>
+        <button class="btn" onclick="cambiarBrillo(5)">5</button>
+      </div>
+    </div>
+    <div class="slider-row">
+      <label>Velocidad</label>
+      <div class="level-buttons" id="speedBtns">
+        <button class="btn" onclick="cambiarVelocidad(1)">1</button>
+        <button class="btn" onclick="cambiarVelocidad(2)">2</button>
+        <button class="btn" onclick="cambiarVelocidad(3)">3</button>
+        <button class="btn" onclick="cambiarVelocidad(4)">4</button>
+        <button class="btn" onclick="cambiarVelocidad(5)">5</button>
+      </div>
+    </div>
+    <div class="btn-grid" style="margin-top:4px;">
+      <button class="btn" onclick="accionPerfil('guardar')">Guardar perfil en PC</button>
+      <button class="btn" onclick="accionPerfil('cargar')">Cargar perfil guardado</button>
+      <button class="btn danger" onclick="accionPerfil('restablecer')">Restablecer de fábrica</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/disposicion.js"></script>
+<script src="/js/animaciones.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>
