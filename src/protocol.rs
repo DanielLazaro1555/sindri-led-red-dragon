@@ -19,8 +19,8 @@ pub const KEY_ON: u8 = 7;
 /// Posición más alta que cabe en el reporte `0x0B`.
 pub const MAX_POSITION: u8 = 125;
 
-/// Todas las teclas (posiciones `1..=124`, las que usa el programa oficial).
-pub const POSITIONS_ALL: std::ops::RangeInclusive<u8> = 1..=124;
+/// Todas las posiciones del reporte `0x0B` (`1..=125`, incluida `num-enter` en 125).
+pub const POSITIONS_ALL: std::ops::RangeInclusive<u8> = 1..=MAX_POSITION;
 /// Teclas de la franja azul del arcoíris: menu, f11, interrogacion, llave-der, shift-der,
 /// ctrl-der, f12 y retroceso (72 y 81 no tienen tecla). Se deja fuera `guion` (posición 65),
 /// que sale celeste.
@@ -309,7 +309,7 @@ mod tests {
     fn reporte_de_todas_las_teclas() {
         let todas: Vec<u8> = POSITIONS_ALL.collect();
         let r = keys_report(&todas, 1).unwrap();
-        assert_eq!(r[2..].iter().filter(|&&b| b == KEY_ON).count(), 124);
+        assert_eq!(r[2..].iter().filter(|&&b| b == KEY_ON).count(), 125);
     }
 
     #[test]
